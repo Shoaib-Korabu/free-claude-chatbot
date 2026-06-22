@@ -4,7 +4,7 @@
 
 **A completely free Claude AI chatbot that runs in your browser. No API key needed. Powered by [Puter.js](https://puter.com).**
 
-[🌐 Live Demo](https://YOUR-GITHUB-USERNAME.github.io/free-claude-chatbot/) · [GitHub](https://github.com/YOUR-GITHUB-USERNAME/free-claude-chatbot)
+[🌐 Live Demo](https://shoaib-korabu.github.io/free-claude-chatbot/) · [GitHub](https://github.com/Shoaib-Korabu)
 
 </div>
 
@@ -46,7 +46,7 @@ It works by using **[Puter.js](https://puter.com)** — a free service that hand
 
 ## 🌐 Live Demo
 
-👉 **[Open the chatbot](https://YOUR-GITHUB-USERNAME.github.io/free-claude-chatbot/)**
+👉 **[Open the chatbot](https://shoaib-korabu.github.io/free-claude-chatbot/)**
 
 When you open it for the first time:
 
