@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Claude Chat (via Puter.js)</title>
+<style>
+  :root {
+    --bg: #121212;
+    --panel: #1e1e1e;
+    --border: #333333;
+    --text: #e0e0e0;
+    --muted: #9e9e9e;
+    --accent: #d87b5c;
+    --green: #5eb371;
+    --red: #e57373;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  header h1 {
+    font-size: 16px;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+  }
+  .statusrow {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #555;
+    margin-right: 5px;
+  }
+  .status-dot.ok { background: var(--green); }
+  .status-dot.fail { background: var(--red); }
+  .toolbar {
+    padding: 10px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+  select {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    font-size: 13px;
+    color: var(--text);
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  #signin {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--panel);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #signin:disabled {
+    border-color: var(--green);
+    color: var(--green);
+    cursor: default;
+  }
+  label.checklabel {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+  }
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .msg {
+    max-width: 70%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    line-height: 1.45;
+    font-size: 14.5px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .user {
+    align-self: flex-end;
+    background: var(--accent);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .assistant {
+    align-self: flex-start;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .assistant.loading { color: var(--muted); font-style: italic; }
+  .assistant.error { border-color: var(--red); color: var(--red); }
+  footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    gap: 10px;
+  }
+  #prompt {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14.5px;
+    resize: none;
+    font-family: inherit;
+    outline: none;
+    max-height: 140px;
+  }
+  #prompt:focus { border-color: var(--accent); }
+  #send {
+    padding: 0 18px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  #send:disabled { opacity: 0.5; cursor: default; }
+  details#debugwrap {
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+  details#debugwrap summary {
+    padding: 8px 20px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #copy-log {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+  #debug {
+    max-height: 140px;
+    overflow-y: auto;
+    padding: 8px 20px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Claude Chat — running via Puter.js</h1>
+  <div class="statusrow">
+    <span><span id="dot-sdk" class="status-dot"></span>Puter SDK</span>
+    <span><span id="dot-auth" class="status-dot"></span>Signed in</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button id="signin">Sign in to Puter</button>
+  <select id="model">
+    <option value="claude-fable-5">claude-fable-5</option>
+    <option value="claude-opus-4.8-fast">claude-opus-4.8-fast</option>
+    <option value="claude-opus-4-8">claude-opus-4-8</option>
+    <option value="claude-opus-4.7-fast">claude-opus-4.7-fast</option>
+    <option value="claude-opus-4-7">claude-opus-4-7</option>
+    <option value="claude-opus-4.6-fast">claude-opus-4.6-fast</option>
+    <option value="claude-sonnet-4-6" selected>claude-sonnet-4-6</option>
+    <option value="claude-opus-4-6">claude-opus-4-6</option>
+    <option value="claude-opus-4-5">claude-opus-4-5</option>
+    <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+    <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
+    <option value="claude-opus-4-1">claude-opus-4-1</option>
+    <option value="claude-opus-4">claude-opus-4</option>
+    <option value="claude-sonnet-4">claude-sonnet-4</option>
+  </select>
+  <label class="checklabel"><input type="checkbox" id="stream"> stream response</label>
+</div>
+
+<div id="chat"></div>
+
+<footer>
+  <textarea id="prompt" rows="1" placeholder="Click 'Sign in to Puter' above first, then type a message and press Enter..."></textarea>
+  <button id="send">Send</button>
+</footer>
+
+<details id="debugwrap" open>
+  <summary>Debug log (open this if something doesn't work, and copy it back to Claude)
+    <button id="copy-log" type="button">Copy log</button>
+  </summary>
+  <div id="debug"></div>
+</details>
+
+<script src="https://js.puter.com/v2/"></script>
+<script>
+const chatEl = document.getElementById('chat');
+const promptEl = document.getElementById('prompt');
+const sendBtn = document.getElementById('send');
+const modelEl = document.getElementById('model');
+const streamEl = document.getElementById('stream');
+const signInBtn = document.getElementById('signin');
+const debugEl = document.getElementById('debug');
+const dotSdk = document.getElementById('dot-sdk');
+const dotAuth = document.getElementById('dot-auth');
+
+let sdkReady = false;
+
+function log(msg, isError) {
+  const time = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  line.textContent = '[' + time + '] ' + msg;
+  if (isError) line.style.color = 'var(--red)';
+  debugEl.appendChild(line);
+  debugEl.scrollTop = debugEl.scrollHeight;
+}
+
+window.addEventListener('error', function (e) {
+  log('Script error: ' + e.message, true);
+});
+window.addEventListener('unhandledrejection', function (e) {
+  var reason = e.reason && e.reason.message ? e.reason.message : e.reason;
+  log('Unhandled promise rejection: ' + reason, true);
+});
+
+document.getElementById('copy-log').addEventListener('click', function () {
+  const text = debugEl.innerText;
+  function fallback() {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      log('Log copied to clipboard.');
+    } catch (e) {
+      log('Could not copy automatically, please select the log text manually.', true);
+    }
+    document.body.removeChild(ta);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () {
+      log('Log copied to clipboard.');
+    }).catch(fallback);
+  } else {
+    fallback();
+  }
+});
+
+function addMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return div;
+}
+
+function extractText(response) {
+  if (typeof response === 'string') return response;
+  if (response && response.message && response.message.content) {
+    const content = response.message.content;
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+      return content.map(function (c) { return c.text || ''; }).join('');
+    }
+  }
+  if (response && typeof response.text === 'string') return response.text;
+  try { return String(response); } catch (e) { return JSON.stringify(response); }
+}
+
+function refreshAuthUI() {
+  if (!sdkReady) return;
+  let signedIn = false;
+  try { signedIn = puter.auth.isSignedIn(); } catch (e) { log('isSignedIn() threw: ' + e.message, true); }
+  dotAuth.className = 'status-dot ' + (signedIn ? 'ok' : '');
+  signInBtn.textContent = signedIn ? 'Signed in to Puter ✓' : 'Sign in to Puter';
+  signInBtn.disabled = signedIn;
+}
+
+function waitForSDK(retries) {
+  if (typeof puter !== 'undefined') {
+    sdkReady = true;
+    log('Puter SDK loaded.');
+    dotSdk.className = 'status-dot ok';
+    refreshAuthUI();
+  } else if (retries > 0) {
+    setTimeout(function () { waitForSDK(retries - 1); }, 300);
+  } else {
+    log('Puter SDK never loaded after ~6 seconds. Check your internet connection, or whether js.puter.com is blocked by an ad-blocker, firewall, or browser extension.', true);
+    dotSdk.className = 'status-dot fail';
+  }
+}
+log('Page loaded, waiting for Puter SDK...');
+waitForSDK(20);
+
+signInBtn.addEventListener('click', async function () {
+  if (!sdkReady) { log('Cannot sign in yet, SDK not loaded.', true); return; }
+  log('Sign-in clicked, opening Puter popup (allow popups for this page if it does not appear)...');
+  try {
+    await puter.auth.signIn();
+    log('Sign-in resolved.');
+  } catch (err) {
+    log('Sign-in failed: ' + (err && err.message ? err.message : err), true);
+  }
+  refreshAuthUI();
+});
+
+async function sendPrompt() {
+  const text = promptEl.value.trim();
+  if (!text) return;
+  if (!sdkReady) { log('Cannot send, Puter SDK is not loaded.', true); return; }
+
+  addMessage('user', text);
+  promptEl.value = '';
+  promptEl.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  const loadingDiv = addMessage('assistant loading', 'Thinking...');
+  const useStream = streamEl.checked;
+  log('Sending prompt to ' + modelEl.value + (useStream ? ' (streaming)' : ' (non-streaming)') + '...');
+
+  try {
+    if (useStream) {
+      const response = await puter.ai.chat(text, { model: modelEl.value, stream: true });
+      loadingDiv.classList.remove('loading');
+      loadingDiv.textContent = '';
+      let gotAny = false;
+      for await (const part of response) {
+        const chunk = (part && part.text) || (part && part.message && part.message.content && part.message.content[0] && part.message.content[0].text) || '';
+        if (chunk) {
+          gotAny = true;
+          loadingDiv.textContent += chunk;
+          chatEl.scrollTop = chatEl.scrollHeight;
+        }
+      }
+      if (!gotAny) loadingDiv.textContent = '(empty response)';
+      log('Stream finished.');
+    } else {
+      const response = await puter.ai.chat(text, { model: modelEl.value });
+      loadingDiv.classList.remove('loading');
+      loadingDiv.textContent = extractText(response);
+      log('Response received.');
+    }
+  } catch (err) {
+    loadingDiv.classList.remove('loading');
+    loadingDiv.classList.add('error');
+    const msg = (err && err.message) || (err && err.error && err.error.message) || String(err);
+    loadingDiv.textContent = 'Error: ' + msg;
+    log('Request failed: ' + msg, true);
+  } finally {
+    sendBtn.disabled = false;
+    promptEl.focus();
+    refreshAuthUI();
+  }
+}
+
+sendBtn.addEventListener('click', sendPrompt);
+
+promptEl.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendPrompt();
+  }
+});
+
+promptEl.addEventListener('input', function () {
+  promptEl.style.height = 'auto';
+  promptEl.style.height = promptEl.scrollHeight + 'px';
+});
+</script>
+
+</body>
+</html>
