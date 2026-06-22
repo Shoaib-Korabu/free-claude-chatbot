@@ -27,6 +27,8 @@ This is a single-file web chatbot that lets you talk to Claude AI models for **f
 
 It works by using **[Puter.js](https://puter.com)** — a free service that handles the Claude API calls through your own Puter account. You don't need an Anthropic API key. You don't need a paid subscription. You just need a free Puter account.
 
+> 🧠 **Single-Use Memory:** Please note that this chatbot operates as a "use-and-throw" interface. It does not retain any memory of previous messages. Whatever context you need the AI to understand must be provided entirely within a single message.
+
 > ⚠️ **Puter's free tier has usage limits** that are not publicly documented. For casual personal use it works well, but heavy or continuous use may hit those limits.
 
 ---
@@ -35,6 +37,7 @@ It works by using **[Puter.js](https://puter.com)** — a free service that hand
 
 - 🆓 **Completely free** — no API key, no subscriptions, no hidden costs
 - 🤖 **Multiple Claude models** — switch between Sonnet, Opus, Haiku and more from a dropdown
+- 🗑️ **Single-Use Interactions** — no conversational memory, perfect for quick, standalone tasks
 - ⚡ **Streaming support** — see responses appear word-by-word as they're generated
 - 🌙 **Dark theme** — easy on the eyes
 - 📄 **One file** — the entire chatbot is a single `index.html` file, nothing else needed
